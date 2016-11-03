@@ -9,6 +9,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using AutoMapper;
 
 namespace SyncManager
 {
@@ -41,23 +42,23 @@ namespace SyncManager
                 var csv = new CsvReader(fileReadableStream, config);
 
                 var records = csv.GetRecords<HealthEnrollment>().ToList();
-                List<HealthEnrollmentDTO> healthEnrollmentDto = new List<HealthEnrollmentDTO>();
 
-                foreach (var healthEnrollment in records)
+                var mapConfig = new MapperConfiguration(cfg =>
                 {
-                    HealthEnrollmentDTO enrollment = new HealthEnrollmentDTO()
-                    {
-                        ContractNumber = healthEnrollment.ContractNumber,
-                        State = healthEnrollment.State,
-                        FIPSStateCountyCode = healthEnrollment.FIPSStateCountyCode,
-                        SSAStateCountyCode = healthEnrollment.SSAStateCountyCode,
-                        County = healthEnrollment.County,
-                        PlanID = healthEnrollment.PlanID,
-                        Enrollment = healthEnrollment.Enrollment,
-                        ReportingTime = reportingTime
-                    };
-                    healthEnrollmentDto.Add(enrollment);
-                }
+                    cfg.CreateMap<HealthEnrollment, HealthEnrollmentDTO>()
+                        //.ForMember(dest => dest.ReportingTime, opt => opt.NullSubstitute(reportingTime)) //This not work
+                        .AfterMap((enrollment, dto) =>
+                         {
+                             if (dto.ReportingTime == null)
+                             {
+                                 dto.ReportingTime = reportingTime;
+                             }
+                         })
+                        ;
+
+                });
+                IMapper mapper = mapConfig.CreateMapper();
+                var healthEnrollmentDto = mapper.Map<List<HealthEnrollment>, List<HealthEnrollmentDTO>>(records);
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
