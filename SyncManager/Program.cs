@@ -46,16 +46,14 @@ namespace SyncManager
                 var mapConfig = new MapperConfiguration(cfg =>
                 {
                     cfg.CreateMap<HealthEnrollment, HealthEnrollmentDTO>()
-                        //.ForMember(dest => dest.ReportingTime, opt => opt.NullSubstitute(reportingTime)) //This not work
+                        //.ForMember(dest => dest.ReportingTime, opt => opt.NullSubstitute(reportingTime)) //doesn't work
                         .AfterMap((enrollment, dto) =>
                          {
                              if (dto.ReportingTime == null)
                              {
                                  dto.ReportingTime = reportingTime;
                              }
-                         })
-                        ;
-
+                         });
                 });
                 IMapper mapper = mapConfig.CreateMapper();
                 var healthEnrollmentDto = mapper.Map<List<HealthEnrollment>, List<HealthEnrollmentDTO>>(records);
